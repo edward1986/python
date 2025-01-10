@@ -9,6 +9,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
+import json
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 logger = logging.getLogger()
@@ -113,6 +114,25 @@ def clean_question_data(questions):
             })
     return cleaned_questions
 
+def store_question_id(question_id, file_path="sent_questions.json"):
+    """Store the ID of the sent question to avoid repetition."""
+    try:
+        # Load existing IDs
+        try:
+            with open(file_path, "r") as file:
+                sent_ids = json.load(file)
+        except FileNotFoundError:
+            sent_ids = []
+
+        # Append the new ID and save
+        sent_ids.append(question_id)
+        with open(file_path, "w") as file:
+            json.dump(sent_ids, file)
+
+        print(f"Stored question ID {question_id}.")
+    except Exception as e:
+        print(f"Error storing question ID: {e}")
+
 def main():
     try:
         # Fetch and clean Stack Overflow questions
@@ -146,6 +166,9 @@ def main():
                 content=response_content,
                 attachment_path=image_path
             )
+
+        # Store the question ID
+        store_question_id(selected_question['id'])
 
         time.sleep(10)  # Respect API rate limits
     except Exception as e:
