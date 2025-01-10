@@ -10,6 +10,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
 import json
+import os
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 logger = logging.getLogger()
@@ -130,6 +131,11 @@ def store_question_id(question_id, file_path="sent_questions.json"):
             json.dump(sent_ids, file)
 
         print(f"Stored question ID {question_id}.")
+
+        # Push changes to GitHub
+        os.system("git add sent_questions.json")
+        os.system("git commit -m 'Update sent questions list'")
+        os.system("git push")
     except Exception as e:
         print(f"Error storing question ID: {e}")
 
