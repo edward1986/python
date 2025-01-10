@@ -63,9 +63,13 @@ def download_image(image_url, output_path):
 
 def generate_pollinations_image(prompt, width=768, height=768, seed=42, model='flux', output_path='generated_image.jpg'):
     """Generate an image using Pollinations API and download it."""
-    image_url = f"https://pollinations.ai/p/{prompt}?width={width}&height={height}&seed={seed}&model={model}"
-    download_image(image_url, output_path)
-    return output_path
+    try:
+        image_url = f"https://pollinations.ai/p/{prompt}?width={width}&height={height}&seed={seed}&model={model}"
+        download_image(image_url, output_path)
+        return output_path
+    except Exception as e:
+        logger.error(f"Error generating image: {e}")
+        return None
 
 def generate_content(prompt):
     """Generate content using the Ollama model."""
@@ -170,7 +174,7 @@ def main():
                 recipient_email=recipient,
                 subject=selected_question['title'],
                 content=response_content,
-                attachment_path=image_path
+                attachment_path=image_path if image_path else None
             )
 
         # Store the question ID
