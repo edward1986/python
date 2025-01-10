@@ -7,11 +7,14 @@ from bs4 import BeautifulSoup
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 logger = logging.getLogger()
 
-def send_email(recipient_email, subject, content):
-    """Send the generated blog content via email."""
+def send_email_with_attachment(recipient_email, subject, content, attachment_path):
+    """Send the generated blog content and image via email."""
     try:
         sender_email = "edwardlorilla2013@gmail.com"
         sender_password = "giax bwty esxw dquw"
@@ -25,6 +28,18 @@ def send_email(recipient_email, subject, content):
         # Attach the blog content
         message.attach(MIMEText(content, "plain"))
 
+        # Attach the image
+        if attachment_path:
+            with open(attachment_path, "rb") as attachment:
+                part = MIMEBase("application", "octet-stream")
+                part.set_payload(attachment.read())
+            encoders.encode_base64(part)
+            part.add_header(
+                "Content-Disposition",
+                f"attachment; filename={attachment_path.split('/')[-1]}",
+            )
+            message.attach(part)
+
         # Connect to the SMTP server
         with smtplib.SMTP("smtp.gmail.com", 587) as server:
             server.starttls()
@@ -34,10 +49,21 @@ def send_email(recipient_email, subject, content):
     except Exception as e:
         print(f"Error sending email: {e}")
 
+def download_image(image_url, output_path):
+    """Download an image from the given URL and save it to the specified path."""
+    response = requests.get(image_url)
+    if response.status_code == 200:
+        with open(output_path, 'wb') as file:
+            file.write(response.content)
+        print(f"Image downloaded successfully to {output_path}.")
+    else:
+        raise Exception(f"Failed to download image: {response.status_code}")
 
-
-
-
+def generate_pollinations_image(prompt, width=768, height=768, seed=42, model='flux', output_path='generated_image.jpg'):
+    """Generate an image using Pollinations API and download it."""
+    image_url = f"https://pollinations.ai/p/{prompt}?width={width}&height={height}&seed={seed}&model={model}"
+    download_image(image_url, output_path)
+    return output_path
 
 def generate_content(prompt):
     """Generate content using the Ollama model."""
@@ -64,11 +90,11 @@ def fetch_stackoverflow_questions(tag="python"):
     response = requests.get(url, params=params)
     if response.status_code != 200:
         raise Exception(f"Failed to fetch questions: {response.status_code}")
-    
+
     data = response.json()
     if not data.get("items"):
         raise Exception("No questions found.")
-    
+
     return data["items"]
 
 def clean_question_data(questions):
@@ -103,19 +129,24 @@ def main():
 
         # Prepare the prompt
         prompt = f"Generate a response to the following Stack Overflow question:\n\n{selected_question['cleaned_text']}"
-        
+
         # Generate content using Ollama
         response_content = generate_content(prompt)
+
+        # Generate an image using Pollinations AI
+        image_path = generate_pollinations_image(prompt=selected_question['title'])
+
         recipients = [
             "edwardlance.lorilla.edwardlancelorilla@blogger.com",
         ]
         for recipient in recipients:
-            send_email(
+            send_email_with_attachment(
                 recipient_email=recipient,
                 subject=selected_question['title'],
-                content=response_content
+                content=response_content,
+                attachment_path=image_path
             )
-        
+
         time.sleep(10)  # Respect API rate limits
     except Exception as e:
         logger.error(f"An error occurred: {e}")
