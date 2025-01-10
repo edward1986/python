@@ -56,6 +56,11 @@ jobs:
         pip install -r requirements.txt
         pip install pollinations
 
+    - name: Configure Git Identity
+      run: |
+        git config --global user.name "Your GitHub Actions Bot"
+        git config --global user.email "github-actions-bot@users.noreply.github.com"
+
     - name: Run Script
       env:
         REDDIT_CLIENT_ID: ${{ secrets.REDDIT_CLIENT_ID }}
